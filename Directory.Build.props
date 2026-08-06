@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <!-- Включает неявные public модификаторы при генерации кода, если это поддерживается шаблоном -->
+    <CodeAnalysisRuleSet></CodeAnalysisRuleSet>
+  </PropertyGroup>
+  
+  <!-- Заставляем компилятор подсказывать замену на public, если класс создан без модификатора -->
+  <ItemDefinitionGroup>
+    <Compile>
+      <Visible>true</Visible>
+    </Compile>
+  </ItemDefinitionGroup>
+</Project>

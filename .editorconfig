@@ -1,0 +1,13 @@
+
+
+root = true
+
+[*.cs]
+# Включает требование явного указания модификаторов
+dotnet_style_accessibility_modifiers = always:warning
+
+# Задает порядок: public должен идти первым (это заставляет генератор использовать его по умолчанию)
+csharp_preferred_modifier_order = public,private,protected,internal:suggestion
+
+# Настройка для генератора кода Visual Studio 2022
+dotnet_code_style_visibility_modifiers = public
