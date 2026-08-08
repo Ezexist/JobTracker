@@ -8,8 +8,10 @@ namespace JobTracker.Domain.Entities
 {
     public class SubscriptionKeyword : BaseEntity
     {
-        public Guid SubscriptionId { get; set; }
-
         public string Value { get; set; } = string.Empty;
+
+        public Guid SubscriptionId { get; set; }
+        public Subscription? Subscription { get; set; }
+
     }
 }

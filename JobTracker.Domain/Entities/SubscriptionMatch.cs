@@ -14,8 +14,9 @@ namespace JobTracker.Domain.Entities
         public MatchStatus Status { get; set; } = MatchStatus.New;
 
         public Guid SubscriptionId { get; set; }
-        public Guid VacancyId { get; set; }
         public Subscription? Subscription { get; set; }
+
+        public Guid VacancyId { get; set; }
         public Vacancy? Vacancy { get; set; }
         public void MarkViewed()
         {
