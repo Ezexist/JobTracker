@@ -10,7 +10,7 @@ namespace JobTracker.Domain.Entities
     {
         public string Email { get; set; } = string.Empty;
 
-        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
         public ICollection<Subscription> Subscriptions { get; set; } = [];
     }

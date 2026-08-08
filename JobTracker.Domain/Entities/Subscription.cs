@@ -16,6 +16,9 @@ namespace JobTracker.Domain.Entities
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
 
+        public Guid UserId { get; set; }
+
+        public User? User { get; set; }
         public ICollection<SubscriptionKeyword> Keywords { get; set; } = [];
 
         public ICollection<SubscriptionLocation> Locations { get; set; } = [];
@@ -34,7 +37,7 @@ namespace JobTracker.Domain.Entities
         {
             IsActive = !IsActive;
         }
-        public void Touch(DateTime utcNow)
+        public void Touch(DateTimeOffset utcNow)
         {
             UpdatedAt = utcNow;
         }
