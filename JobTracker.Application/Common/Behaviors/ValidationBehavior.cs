@@ -1,0 +1,56 @@
+﻿using FluentValidation;
+using MediatR;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+using AppValidationException = JobTracker.Application.Common.Exceptions.ValidationException;
+
+namespace JobTracker.Application.Common.Behaviors
+{
+    public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+         where TRequest : notnull
+    {
+        private readonly IEnumerable<IValidator<TRequest>> _validators;
+
+        public ValidationBehavior(IEnumerable<IValidator<TRequest>> validators)
+        {
+            _validators = validators;
+        }
+
+        public async Task<TResponse> Handle(TRequest request,
+            RequestHandlerDelegate<TResponse> next,
+            CancellationToken cancellationToken)
+        {
+            if (!_validators.Any())
+            {
+                return await next();
+            }
+
+            var context = new ValidationContext<TRequest>(request);
+
+            var validationResults = await Task.WhenAll(
+                _validators.Select(validator => validator.ValidateAsync(context, cancellationToken)));
+
+            var failures = validationResults
+                .SelectMany(result => result.Errors)
+                .Where(failure => failure is not null)
+                .ToList();
+
+            if(failures.Count == 0)
+            {
+                return await next();
+            }
+
+            var errors = failures
+                .GroupBy(failure => failure.PropertyName)
+                .ToDictionary(
+                group => group.Key,
+                group => group.Select(failure => failure.ErrorMessage).ToArray());
+
+            throw new AppValidationException(errors);
+        }
+    }
+}
