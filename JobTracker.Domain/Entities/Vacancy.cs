@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace JobTracker.Domain.Entities
 {
-    public class Vacancy
+    public class Vacancy : BaseEntity
     {
         public string Source { get; set; } = string.Empty;
         public string ExternalId { get; set; } = string.Empty;
