@@ -45,6 +45,17 @@ namespace JobTracker.Api.Middleware
                     await context.Response.WriteAsJsonAsync(validationResponse);
                     break;
 
+                case NotFoundException notFoundException:
+                    context.Response.StatusCode = StatusCodes.Status404NotFound;
+
+                    var notFoundResponse = new
+                    {
+                        message = notFoundException.Message
+                    };
+
+                    await context.Response.WriteAsJsonAsync(notFoundResponse);
+                    break;
+
                 default:
 
                     _logger.LogError(exception, "Unhandled exception occurred");
