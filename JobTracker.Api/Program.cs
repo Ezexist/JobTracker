@@ -53,4 +53,5 @@ await DatabaseSeeder.SeedDefaultUserAsync(app.Services);
 
 app.Run();
 
+public partial class Program { }
 
