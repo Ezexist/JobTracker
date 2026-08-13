@@ -64,7 +64,10 @@ namespace JobTracker.Api.Middleware
 
                     var errorResponse = new
                     {
-                        message = "An unexpected error occurred"
+                        //Change to default message after finished tests
+                        message = exception.Message,
+                        innerMessage = exception.InnerException?.Message,
+                        stackTrace = exception.StackTrace
                     };
 
                     await context.Response.WriteAsJsonAsync(errorResponse);
