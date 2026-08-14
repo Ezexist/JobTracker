@@ -5,6 +5,9 @@ using JobTracker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
+using JobTracker.Infrastructure.JobSources;
+using JobTracker.Application.Common.Abstractions;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, services, configuration) =>
@@ -18,6 +21,21 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
+
+
+builder.Services.AddHttpClient<DouJobSource>(client =>
+{
+    client.BaseAddress = new Uri("https://jobs.dou.ua");
+    client.DefaultRequestHeaders.Add(
+        "User-Agent",
+        "JobTracker/1.0");
+    client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml");
+    client.DefaultRequestHeaders.Add("Accept-Language", "uk-UA,uk;q=0.9,en-US;q=0.8,en;q=0.7");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+builder.Services.AddScoped<IJobSource, DouJobSource>(provider =>
+    provider.GetRequiredService<DouJobSource>());
 
 builder.Services.AddAplication();
 // Add services to the container.
