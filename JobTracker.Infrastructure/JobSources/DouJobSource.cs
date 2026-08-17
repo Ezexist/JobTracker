@@ -1,5 +1,4 @@
 ﻿using AngleSharp;
-using AngleSharp.Dom;
 using JobTracker.Application.Common.Abstractions;
 using JobTracker.Infrastructure.Dou;
 using Microsoft.Extensions.Logging;
@@ -12,7 +11,8 @@ public sealed class DouJobSource : IJobSource
     private readonly ILogger<DouJobSource> _logger;
     private readonly DouVacancyParser _parser;
 
-    private const int MaxPages = 10;
+    private const int PageSize = 20;
+    private const int MaxPages = 5;
     private const int DelayBetweenPagesMs = 2000;
 
     public DouJobSource(
@@ -29,24 +29,42 @@ public sealed class DouJobSource : IJobSource
     public async Task<List<JobSourceVacancy>> FetchVacanciesAsync(CancellationToken cancellationToken)
     {
         var allVacancies = new List<JobSourceVacancy>();
+        var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         try
         {
-            for (int page = 1; page <= MaxPages; page++)
+            for (var page = 0; page < MaxPages; page++)
             {
-                var vacancies = await FetchPageAsync(page, cancellationToken);
+                var start = page * PageSize;
+                var pageVacancies = await FetchPageAsync(start, cancellationToken);
 
-                if (vacancies.Count == 0)
+                if (pageVacancies.Count == 0)
                 {
-                    _logger.LogInformation("No more vacancies found on page {Page}", page);
+                    _logger.LogInformation("No vacancies at start={Start}, stopping", start);
                     break;
                 }
 
-                allVacancies.AddRange(vacancies);
-                _logger.LogInformation("Fetched {Count} vacancies from page {Page}", vacancies.Count, page);
+                var newOnPage = 0;
+                foreach (var vacancy in pageVacancies)
+                {
+                    if (seenIds.Add(vacancy.ExternalId))
+                    {
+                        allVacancies.Add(vacancy);
+                        newOnPage++;
+                    }
+                }
 
-                // Задержка между страницами для этичности
-                if (page < MaxPages)
+                _logger.LogInformation(
+                    "DOU start={Start}: fetched {Count}, new {New}",
+                    start, pageVacancies.Count, newOnPage);
+
+                // Страница вернула только дубликаты → пагинация не работает, выходим
+                if (newOnPage == 0)
+                {
+                    break;
+                }
+
+                if (page < MaxPages - 1)
                 {
                     await Task.Delay(DelayBetweenPagesMs, cancellationToken);
                 }
@@ -66,28 +84,19 @@ public sealed class DouJobSource : IJobSource
         return allVacancies;
     }
 
-    private async Task<List<JobSourceVacancy>> FetchPageAsync(int page, CancellationToken cancellationToken)
+    private async Task<List<JobSourceVacancy>> FetchPageAsync(int start, CancellationToken cancellationToken)
     {
         var vacancies = new List<JobSourceVacancy>();
 
-        var url = $"/vacancies/?category=.NET&page={page}";
+        var url = $"/vacancies/?category=.NET&start={start}";
         var html = await _httpClient.GetStringAsync(url, cancellationToken);
 
         var context = BrowsingContext.New(Configuration.Default);
         var document = await context.OpenAsync(req => req.Content(html), cancellationToken);
 
-        // Ищем контейнер со списком вакансий (не боковую панель)
-        var vacancyListContainer = document.QuerySelector("div.vt-list")
-                                ?? document.QuerySelector("div#vacancyList");
-
-        if (vacancyListContainer is null)
-        {
-            _logger.LogWarning("Could not find vacancy list container on page {Page}", page);
-            return vacancies;
-        }
-
-        // Ищем элементы вакансий внутри контейнера
-        var vacancyElements = vacancyListContainer.QuerySelectorAll("div.vacancy");
+        // Вакансии основного списка — <li class="l-vacancy">.
+        // Боковая панель эту разметку не использует.
+        var vacancyElements = document.QuerySelectorAll("li.l-vacancy");
 
         foreach (var element in vacancyElements)
         {
@@ -101,7 +110,7 @@ public sealed class DouJobSource : IJobSource
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to parse vacancy element on page {Page}", page);
+                _logger.LogWarning(ex, "Failed to parse vacancy element at start={Start}", start);
             }
         }
 

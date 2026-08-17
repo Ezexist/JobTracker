@@ -7,6 +7,7 @@ using Serilog;
 
 using JobTracker.Infrastructure.JobSources;
 using JobTracker.Application.Common.Abstractions;
+using JobTracker.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +37,8 @@ builder.Services.AddHttpClient<DouJobSource>(client =>
 
 builder.Services.AddScoped<IJobSource, DouJobSource>(provider =>
     provider.GetRequiredService<DouJobSource>());
+
+builder.Services.AddHostedService<VacancyIngestionBackgroundService>();
 
 builder.Services.AddAplication();
 // Add services to the container.
